@@ -1,3 +1,6 @@
+Add data collection timestamp and timestamp format is compatible with dials 2.x.
+
+
 eiger2cbf: EIGER HDF5 to miniCBF converter
 ==========================================
 
