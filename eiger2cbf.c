@@ -1,7 +1,11 @@
 /*
 EIGER HDF5 to CBF converter
  Written by Takanori Nakane
- Add collection time by Feng Yu
+ 
+ 
+ 1) Add collection time to cbf header
+ 2) Support nimages_per_file = 0
+ By Feng Yu
 
 To build:
 
@@ -274,8 +278,12 @@ int main(int argc, char **argv) {
     if (H5LTfind_dataset(group, "data_000000")) {
         fprintf(stderr, "This dataset starts from data_000000.\n");
         block_start = 0;
-    } else {
+    } else if (H5LTfind_dataset(group, "data_000001")) {
         fprintf(stderr, "This dataset starts from data_000001.\n");
+        block_start = 1;
+    } else if (H5LTfind_dataset(group, "data")) {
+        fprintf(stderr, "Filelink is not used in this dataset.\n");
+        block_start = -1;
     }
 
     char data_name[20] = {};
@@ -283,7 +291,11 @@ int main(int argc, char **argv) {
     int number_per_block = 0;
   
     // Open the first data block to get the number of frames in a block
-    snprintf(data_name, 20, "data_%06d", block_start); 
+    if (block_start != -1) {
+        snprintf(data_name, 20, "data_%06d", block_start); 
+    } else {
+        snprintf(data_name, 20, "data");
+    }
     data = H5Dopen2(group, data_name, H5P_DEFAULT);
     dataspace = H5Dget_space(data);
     if (data < 0) {
@@ -359,13 +371,16 @@ int main(int argc, char **argv) {
 
 
         // Now open the required data
-
-        int block_number = block_start + (frame - 1) / number_per_block;
-        int frame_in_block = (frame - 1) % number_per_block;
-        // fprintf(stderr, " frame %d is in data_%06d frame %d (1-indexed).\n", 
-        // frame, block_number, frame_in_block + 1);
+        if (block_start != -1) {
+            int block_number = block_start + (frame - 1) / number_per_block;
+            // fprintf(stderr, " frame %d is in data_%06d frame %d (1-indexed).\n", 
+            // frame, block_number, frame_in_block + 1);
     
-        snprintf(data_name, 20, "data_%06d", block_number); 
+            snprintf(data_name, 20, "data_%06d", block_number); 
+        } else {
+            snprintf(data_name, 20, "data"); 
+        }
+        int frame_in_block = (frame - 1) % number_per_block;
         data = H5Dopen2(group, data_name, H5P_DEFAULT);
         dataspace = H5Dget_space(data);
         if (data < 0) {

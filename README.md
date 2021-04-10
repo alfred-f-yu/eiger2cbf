@@ -1,4 +1,5 @@
-Add data collection timestamp and timestamp format is compatible with dials 2.x.
+1) Add data collection timestamp to CBF header.
+2) Support nimages_per_file = 0.
 
 
 eiger2cbf: EIGER HDF5 to miniCBF converter
