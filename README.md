@@ -1,5 +1,6 @@
 1) Add data collection timestamp to CBF header.
 2) Support nimages_per_file = 0.
+3) Write start angle to the specified value.
 
 
 eiger2cbf: EIGER HDF5 to miniCBF converter
