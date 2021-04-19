@@ -5,6 +5,7 @@ EIGER HDF5 to CBF converter
  
  1) Add collection time to cbf header
  2) Support nimages_per_file = 0
+ 3) Write start angle to the specified value
  By Feng Yu
 
 To build:
@@ -63,6 +64,7 @@ int main(int argc, char **argv) {
     int ret;
     double pixelsize = -1, wavelength = -1, distance = -1, count_time = -1, frame_time = -1, osc_width = -1, osc_start = -9999, thickness = -1;
     char detector_sn[256] = {}, description[256] = {}, version[256] = {}, collection_time[256] = {};
+    double start_angle = -9999;
 
     hid_t hdf;
 
@@ -70,12 +72,13 @@ int main(int argc, char **argv) {
     fprintf(stderr, " written by Takanori Nakane\n");
     fprintf(stderr, " see https://github.com/biochem-fan/eiger2cbf for details.\n\n");
 
-    if (argc <= 1 || argc >= 5) { 
+    if (argc <= 1 || argc >= 6) { 
         printf("Usage:\n");
-        printf("  %s filename.h5           -- get number of frames\n", argv[0]);
-        printf("  %s filename.h5 N out.cbf -- write N-th frame to out.cbf\n", argv[0]);
-        printf("  %s filename.h5 N         -- write N-th frame to STDOUT\n", argv[0]);
-        printf("  %s filename.h5 N:M   out -- write N to M-th frames to outNNNNNN.cbf\n", argv[0]);
+        printf("  %s filename.h5                       -- get number of frames\n", argv[0]);
+        printf("  %s filename.h5 N out.cbf             -- write N-th frame to out.cbf\n", argv[0]);
+        printf("  %s filename.h5 N out.cbf start_angle -- write N-th frame to out.cbf and write Start_angle to start_angle\n", argv[0]);
+        printf("  %s filename.h5 N                     -- write N-th frame to STDOUT\n", argv[0]);
+        printf("  %s filename.h5 N:M   out             -- write N to M-th frames to outNNNNNN.cbf\n", argv[0]);
         printf("  N starts from 1. The file should be \"master\" h5.\n");
         return -1;
     }
@@ -106,6 +109,16 @@ int main(int argc, char **argv) {
         fprintf(stderr, "You cannot output multiple images into STDOUT.");
         return -1;
     }
+
+    if (to == from && argc == 5) {
+        ret = sscanf(argv[4], "%lf", &start_angle);
+        if (ret == 0) {
+            fprintf(stderr, "Failed to parse start angle.");
+            return -1;
+        }
+        fprintf(stderr, "Start angle will be set to: %f\n", start_angle);
+    }
+
     fprintf(stderr, "Going to convert frame %d to %d.\n", from, to);  
   
     H5Eset_auto(0, NULL, NULL); // Comment out this line for debugging.
@@ -332,6 +345,10 @@ int main(int argc, char **argv) {
             // So we don't exit here
         }
 
+        if (start_angle != -9999) {
+            osc_start = start_angle;
+        }
+
         char header_format[] = 
             "\n"
             "# Detector: %s, S/N %s\n"
@@ -368,7 +385,6 @@ int main(int argc, char **argv) {
             osc_width,
             collection_time
         );
-
 
         // Now open the required data
         if (block_start != -1) {
